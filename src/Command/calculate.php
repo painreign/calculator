@@ -4,6 +4,7 @@ define('E', exp(1));
 define('Pi', pi());
 $file = 'definedVars.txt';
 
+// Load saved values from previous expressions
 if (file_exists($file)) {
     $definedVarsFile = file_get_contents($file);
     $definedVars = json_decode($definedVarsFile, true);
@@ -14,14 +15,11 @@ if (file_exists($file)) {
     unset($definedVarsFile);
 }
 
-$definedVars = removeSystemVariables(get_defined_vars());
-$varNames = array_keys($definedVars);
-
 if(!isset($argv[1])) {
     die("Example: php calculate.php '".'$number'." = E*15/2+(7+12)*3' \n");
 }
 
-if (!validate($argv[1], $varNames)) {
+if (!validate($argv[1])) {
     die ("Only math expression and '" . '$var' . " = expression' is allowed \n");
 }
 try {
@@ -39,10 +37,9 @@ file_put_contents($file, json_encode($definedVars));
  * Validate that code consists only of digits and letters for security
  * 
  * @param string $code
- * @param array $varNames
  * @return bool
  */
-function validate(string $code, array $varNames): bool
+function validate(string $code): bool
 {
     // Remove whitespaces and math operations
     $code = preg_replace('/[^A-Za-z0-9\-\$\{\};]/', '', $code);
