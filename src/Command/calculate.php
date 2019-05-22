@@ -24,8 +24,11 @@ if(!isset($argv[1])) {
 if (!validate($argv[1], $varNames)) {
     die ("Only math expression and '" . '$var' . " = expression' is allowed \n");
 }
-
-eval('$result = ' . $argv[1] . ';');
+try {
+    eval('$result = ' . $argv[1] . ';');
+} catch (ParseError $e) {
+    die ("Only math expression and '" . '$var' . " = expression' is allowed \n");
+}
 
 echo $result . "\n";
 
@@ -33,7 +36,7 @@ $definedVars = removeSystemVariables(get_defined_vars());
 file_put_contents($file, json_encode($definedVars));
 
 /**
- * Validate that input is legal math expression or var = expression and that only defined variables provided in expression
+ * Validate that code consists only of digits and letters for security
  * 
  * @param string $code
  * @param array $varNames
@@ -41,20 +44,14 @@ file_put_contents($file, json_encode($definedVars));
  */
 function validate(string $code, array $varNames): bool
 {
-    // Remove whitespaces
-    $code = preg_replace('/\s+/', '', $code);
-
-    $variables = '\^$([a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*)'; // Allowed variables
-    $definedVarNames = '\$' . implode('|\$', $varNames);
-    $number = '(?:\d+(?:[,.]\d+)?|Pi|E|'.$definedVarNames.')'; // What is a number
-    $functions = '(?:sinh?|cosh?|tanh?|abs|acosh?|asinh?|atanh?|exp|log10|deg2rad|rad2deg|sqrt|ceil|floor|round)'; // Allowed PHP functions
-    $operators = '[+\/*\^%-]'; // Allowed math operators
-    $regexp = '/((' . $number . '|' . $variables . '=|' . $functions . '\s*\((?1)+\)|\((?1)+\))(?:' . $operators . '(?2))?)+$/'; 
+    // Remove whitespaces and math operations
+    $code = preg_replace('/[^A-Za-z0-9\-\$\{\};]/', '', $code);
+    $regex = '/[^A-Za-z0-9\$]/';
     
-    if (preg_match($regexp, $code)) {
+    if (!preg_match($regex, $code, $matches)) {
         return true;
     }
-
+    
     return false;
 }
 
